@@ -5,8 +5,21 @@ import cv2
 import pyuarm
 
 arm = pyuarm.uarm.UArm()
+y_min = 115
+y_max = 365
+z_min = 50
+z_max = 250
 
 cam = cv2.VideoCapture(0)
+height = cam.get(cv2.CAP_PROP_FRAME_HEIGHT)
+width = cam.get(cv2.CAP_PROP_FRAME_WIDTH)
+
+m_y = (y_max - y_min) / width
+b_y = y_max - (m_y * width)
+
+m_z = -(z_max - z_min) / height
+b_z = z_max
+
 cv2.namedWindow("Mask", cv2.WINDOW_NORMAL)
 cv2.namedWindow("Camera", cv2.WINDOW_NORMAL)
 
@@ -89,6 +102,8 @@ while True:
 			hullPts = cv2.convexHull(hand, returnPoints=False)
 			defects = cv2.convexityDefects(hand, hullPts)
 
+			#Again, not the most efficient method for distinquishing between an open and closed hand,
+			#but it works as a proof of concept
 			pump = False
 			if defects is not None:
 				pump = True
@@ -98,7 +113,7 @@ while True:
 						break
 
 			#print pump
-			#arm.set_pump(pump)
+			arm.set_pump(pump)
 
 			M = cv2.moments(hand)
 
@@ -108,8 +123,9 @@ while True:
 
 				cv2.circle(frame, (cX, cY), 7, (0, 0, 255), -1)
 
-				arm_y = 300 - (0.235849 * cX + 100)
-				arm_z = (-0.3125 * cY + 250)
+				arm_y = y_max - ((m_y * cX) + b_y)
+				arm_z = (m_z * cY) + b_z
+				#print arm_y, arm_z
 				arm.set_position(0, arm_y, arm_z, 100)
 
 			cv2.drawContours(frame, contours, contour, (255, 0, 0), 3)
