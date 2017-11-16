@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import pyuarm
 
-#arm = pyuarm.uarm.UArm()
+arm = pyuarm.uarm.UArm()
 
 cam = cv2.VideoCapture(0)
 cv2.namedWindow("Mask", cv2.WINDOW_NORMAL)
@@ -46,7 +46,7 @@ cv2.createTrackbar("Upper Value", "Mask", 0, 255, updateMask)
 
 #Good default values
 cv2.setTrackbarPos("Lower Hue", "Mask", 0)
-cv2.setTrackbarPos("Upper Hue", "Mask", 23)
+cv2.setTrackbarPos("Upper Hue", "Mask", 34)
 cv2.setTrackbarPos("Lower Saturation", "Mask", 36)
 cv2.setTrackbarPos("Upper Saturation", "Mask", 255)
 cv2.setTrackbarPos("Lower Value", "Mask", 0)
@@ -86,17 +86,31 @@ while True:
 			
 			hand = contours[contour]
 			hull = cv2.convexHull(hand)
+			hullPts = cv2.convexHull(hand, returnPoints=False)
+			defects = cv2.convexityDefects(hand, hullPts)
+
+			pump = False
+			if defects is not None:
+				pump = True
+				for defect in defects:
+					if defect[0][3] > 10000:
+						pump = False
+						break
+
+			#print pump
+			#arm.set_pump(pump)
+
 			M = cv2.moments(hand)
+
 			if int(M["m00"]) is not 0:
 				cX = int(M["m10"] / M["m00"])
 				cY = int(M["m01"] / M["m00"])
 
 				cv2.circle(frame, (cX, cY), 7, (0, 0, 255), -1)
 
-				arm_y = (848 - cX) / 2
-				arm_z = (480 - cY) / 2 
-				#print arm_y, arm_z
-				#arm.set_position(0, arm_y, arm_z, 100)
+				arm_y = 300 - (0.235849 * cX + 100)
+				arm_z = (-0.3125 * cY + 250)
+				arm.set_position(0, arm_y, arm_z, 100)
 
 			cv2.drawContours(frame, contours, contour, (255, 0, 0), 3)
 			cv2.drawContours(frame, [hull], 0, (0, 0, 255), 3)
@@ -108,6 +122,8 @@ while True:
 	else:
 		print "Could not read frame"
 		break
+
+arm.set_pump(False)
 
 cam.release()
 cv2.destroyAllWindows()
