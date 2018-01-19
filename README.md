@@ -1,4 +1,4 @@
-Uses OpenCV and TensorFlow to allow the uArm Metal to mirror the movement of your hand.
+Using just a webcam, this program will cause the uArm Metal to move however you move your hand. The state of the pump is also controlled by the closing and opening of your hand.
 
 
 Open hand -> pump off
